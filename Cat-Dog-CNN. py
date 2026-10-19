@@ -1,0 +1,110 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+
+# Step 1: Load the Cat and Dog Dataset
+dataset_url = (
+    "https://storage.googleapis.com/"
+    "mledu-datasets/cats_and_dogs_filtered.zip"
+)
+
+dataset_path = tf.keras.utils.get_file(
+    "cats_and_dogs_filtered.zip",
+    origin=dataset_url,
+    extract=True
+)
+
+import os
+
+dataset_dir = os.path.join(
+    os.path.dirname(dataset_path),
+    "cats_and_dogs_filtered"
+)
+
+train_dir = os.path.join(dataset_dir, "train")
+validation_dir = os.path.join(dataset_dir, "validation")
+
+# Step 2: Load Training Images
+train_dataset = tf.keras.utils.image_dataset_from_directory(
+    train_dir,
+    image_size=(150, 150),
+    batch_size=32,
+    label_mode="binary"
+)
+
+# Step 3: Load Validation Images
+validation_dataset = tf.keras.utils.image_dataset_from_directory(
+    validation_dir,
+    image_size=(150, 150),
+    batch_size=32,
+    label_mode="binary"
+)
+
+# Step 4: Create CNN Model
+model = models.Sequential([
+    layers.Input(shape=(150, 150, 3)),
+
+    # Normalize pixel values
+    layers.Rescaling(1.0 / 255),
+
+    # First convolutional layer
+    layers.Conv2D(32, (3, 3), activation="relu"),
+    layers.MaxPooling2D((2, 2)),
+
+    # Second convolutional layer
+    layers.Conv2D(64, (3, 3), activation="relu"),
+    layers.MaxPooling2D((2, 2)),
+
+    # Third convolutional layer
+    layers.Conv2D(128, (3, 3), activation="relu"),
+    layers.MaxPooling2D((2, 2)),
+
+    # Flatten layer
+    layers.Flatten(),
+
+    # Fully connected layer
+    layers.Dense(128, activation="relu"),
+
+    # Output layer
+    layers.Dense(1, activation="sigmoid")
+])
+
+# Step 5: Compile the Model
+model.compile(
+    optimizer="adam",
+    loss="binary_crossentropy",
+    metrics=["accuracy"]
+)
+
+# Display model structure
+model.summary()
+
+# Step 6: Train the Model
+history = model.fit(
+    train_dataset,
+    validation_data=validation_dataset,
+    epochs=5
+)
+
+# Step 7: Evaluate the Model
+loss, accuracy = model.evaluate(validation_dataset)
+
+print("Validation Accuracy:", accuracy * 100, "%")
+
+# Step 8: Save the Model
+model.save("cat_dog_model.keras")
+
+print("Model saved successfully!")
+
+# Step 9: Plot Training Accuracy
+plt.plot(history.history["accuracy"], label="Training Accuracy")
+plt.plot(
+    history.history["val_accuracy"],
+    label="Validation Accuracy"
+)
+
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.title("Cat and Dog Classification")
+plt.legend()
+plt.show()
